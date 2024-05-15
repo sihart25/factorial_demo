@@ -1,0 +1,29 @@
+stages:
+- build
+- test-job
+
+build-job:
+stage: build
+tags:
+- linux
+image: gcc
+before_script:
+- apt-get update --yes - apt-get install --yes cmake
+script:
+- mkdir build
+- cd build
+- cmake ..
+- cmake --build .
+artifacts:
+paths:
+- build
+
+test-job:
+ stage: test
+ tags:
+  - test-runner
+script:
+  - cd build
+  - test/Factorial_test
+ dependencies:
+  - build-job
