@@ -1,11 +1,12 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required(VERSION 3.29)
 
 # Setup GoogleTest
-configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+configure_file(CMakeLists.txt.ini googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
   RESULT_VARIABLE result
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-if(result)   message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+if(result)
+   message(FATAL_ERROR "CMake step for googletest failed: ${result}")
 endif()
 execute_process(COMMAND ${CMAKE_COMMAND} --build .
   RESULT_VARIABLE result
@@ -13,6 +14,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} --build .
 if(result)
   message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
+
 # Prevent overriding the parent project's compiler/linker
 # settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -21,32 +23,35 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
                  EXCLUDE_FROM_ALL)
-# The gtest/gtest_main targets carry header search path
-# dependencies automatically when using CMake 2.8.11 or
-# later. Otherwise we have to add them here ourselves.
-#if (CMAKE_VERSION VERSION_LESS 2.8.11)
-#  include_directories("${gtest_SOURCE_DIR}/include")
-#endif()
-project (Factorial_test)
-set(SOURCES test.cpp ../src/Factorial.cpp) 
+
+
+set(BINARY ${CMAKE_PROJECT_NAME}_tst)
+
+set(SOURCES ./main.cpp ./factorial_tests.cpp ../src/Factorial.cpp) 
 set(HEADERS ../src/Factorial.h)
-add_executable(Factorial_test ${SOURCES} ${HEADERS})
-set_property(TARGET Factorial_test PROPERTY CXX_STANDARD 17)
-set_property(TARGET Factorial_test PROPERTY CXX_STANDARD_REQUIRED ON)
+add_executable(${BINARY} ${SOURCES} ${HEADERS})
+set_property(TARGET ${BINARY} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${BINARY} PROPERTY CXX_STANDARD_REQUIRED ON)
 include_directories(../src)
-target_link_libraries(Factorial_test gtest_main)
+target_link_libraries(${BINARY} gtest_main)
 enable_testing()
-add_test(NAME Factorial_test COMMAND Factorial_test)
-tst/CMakeLists.txt.ini
-cmake_minimum_required(VERSION 3.10)
-project(googletest-download NONE)
-include(ExternalProject)
-ExternalProject_Add(googletest
-  URL https://github.com/google/googletest/archive/master.zip
-  SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
-  BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND     ""
-  INSTALL_COMMAND   ""
-  TEST_COMMAND      ""
+
+add_test(NAME Usage COMMAND ${BINARY})
+set_tests_properties(Usage
+  PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*number"
 )
+
+add_test(NAME ${BINARY} COMMAND ${BINARY} )
+ function(do_test target arg result)
+  add_test(NAME Comp${arg} COMMAND ${target} ${arg})
+  set_tests_properties(Comp${arg}
+    PROPERTIES PASS_REGULAR_EXPRESSION ${result}
+    )
+endfunction()
+
+# do a bunch of result based tests
+do_test(${BINARY} 4 "4 = 24")
+do_test(${BINARY} 9 "9 = 362880")
+do_test(${BINARY} 5 "5 = 120")
+do_test(${BINARY} 7 "7 = 5040")
+do_test(${BINARY} 25 "25 = 7034535277573963776") 
